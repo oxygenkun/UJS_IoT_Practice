@@ -1,24 +1,30 @@
 #include <ArduinoJson.h>
+#include "DHT.h"
+#define LEDPIN  2
+#define DHTPIN 4
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
 bool powerValue;
-int ledPin = 2;
 String inputString;
 DynamicJsonDocument inputJson(200);
-DynamicJsonDocument propertiesJson(200);
+
 
 void setup() {
   // initialize equipment's properties
   powerValue = 0;
-  propertiesJson["powerValue"] = powerValue;
 
-  // initialize serial:
+  // initialize
   Serial.begin(9600);
-
+  dht.begin();
+  
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
 }
 
 void loop() {
-  digitalWrite(ledPin, powerValue);
+  digitalWrite(LEDPIN, powerValue);
+  
   delay(1000);
 }
 
@@ -29,7 +35,6 @@ void loop() {
 */
 void serialEvent() {
   String inputString = Serial.readString();
-  Serial.println(inputString);
   DeserializationError error = deserializeJson(inputJson, inputString);
 
   // Test if parsing succeeds.
@@ -41,28 +46,53 @@ void serialEvent() {
 
   const char* cmd_char = inputJson["cmd"];
   String cmd = String(cmd_char);
-  
+
   if (cmd == NULL)
-    errorReport("Wrong Command!");
+    errorReport(F("No Command!"));
+  else if (cmd == "ps") {
+    long val = inputJson["par"];
+    powerSet(val);
+  }
+  else if (cmd == "dht") {
+    readTempAndHumi();
+  }
   else
-    if(cmd == "ps"){
-      Serial.println(cmd);
-      long val = inputJson["par"];
-      powerSet(val);
-    }
+    errorReport(F("Wrong Command!"));
 }
 
 /*
-
+   set power
 */
 void powerSet(int val) {
   if (val == 0 || val == 1) {
     powerValue = val;
-    String stringOne = "Power set: ";
+    String stringOne = F("Power set: ");
     String stringTwo = stringOne + powerValue;
     Serial.println(stringTwo);
   } else
     errorReport("Wrong Power Set Parameters!");
+}
+
+/*
+   read temperature and humidity
+*/
+void readTempAndHumi() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  // Check if any reads failed and exit early (to try again)
+  if (isnan(h) || isnan(t)) {
+    errorReport(F("Failed to read from DHT sensor!"));
+    return;
+  }
+
+  DynamicJsonDocument returnJson(50);
+  DynamicJsonDocument dataJson(25);
+  returnJson["cmd"] = "dht";
+  dataJson["humi"] = h;
+  dataJson["temp"] = t;
+  returnJson["data"] = dataJson;
+  serializeJson(returnJson, Serial);
 }
 
 /*
