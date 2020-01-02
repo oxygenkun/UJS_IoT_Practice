@@ -69,12 +69,14 @@ void serialEvent() {
 void powerSet(int val) {
   if (val == 0 || val == 1) {
     powerValue = val;
-   
+
     DynamicJsonDocument returnJson(50);
     returnJson["cmd"] = "ps";
     returnJson["code"] = 200;
     returnJson["data"] = powerValue;
-    serializeJson(returnJson, Serial);
+    String returnString ;
+    serializeJson(returnJson, returnString);
+    Serial.println(returnString);
   } else
     errorReport("Wrong Power Set Parameters!");
 }
@@ -98,7 +100,9 @@ void readTempAndHumi() {
   dataJson["Humi"] = h;
   dataJson["Temp"] = t;
   returnJson["data"] = dataJson;
-  serializeJson(returnJson, Serial);
+  String returnString ;
+  serializeJson(returnJson, returnString);
+  Serial.println(returnString);
 
 }
 

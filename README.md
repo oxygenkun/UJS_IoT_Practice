@@ -9,3 +9,8 @@
     ```
     pip install aliyun-iot-linkkit
     ```
+   
+   3. 使用pip自动安装Advanced Python Scheduler（APScheduler）
+   ```
+   pip install apscheduler
+   ```
