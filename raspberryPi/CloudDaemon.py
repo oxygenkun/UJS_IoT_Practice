@@ -17,12 +17,13 @@ class CloudDaemon(object):
     __humidity = 0.00
 
     # 属性
-    __properties = {
-        __power_name: __power,
-        'Counter': 0,
-        __temperature_name: __temperature,
-        __humidity_name: __humidity
-    }
+    def properties(self):
+        return {
+            self.__power_name: self.__power,
+            'Counter': 0,
+            self.__temperature_name: self.__temperature,
+            self.__humidity_name: self.__humidity
+        }
 
     def __init__(self, config_path, model_path, process):
         self.__config_path = config_path
@@ -63,7 +64,7 @@ class CloudDaemon(object):
         # 延时
         time.sleep(2)
         # 第一次数据上报
-        self.lk.thing_post_property(self.__properties)
+        self.lk.thing_post_property(self.properties())
 
     def set_power(self, val):
         if val is True or val is False:
@@ -81,11 +82,21 @@ class CloudDaemon(object):
     def set_humidity(self, val):
         self.__humidity = val
 
+    def upload_power(self):
+        prop_data = {self.__power_name:self.__power}
+        rc, request_id = self.lk.thing_post_property(prop_data)
+        if rc == 0:
+            logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
+        else:
+            logging.warning("thing_post_property failed:%d" % rc)
+
     def update_temperature_and_humidity(self):
         statue, data = self.__process.get_temp()
         if statue is True:
             self.__temperature = data[self.__temperature_name]
             self.__humidity = data[self.__humidity_name]
+        else:
+            logging.warning("update_temperature_and_humidity failed!")
 
     def upload_temperature_and_humidity(self):
         prop_data = {self.__temperature_name: self.__temperature,
@@ -151,14 +162,18 @@ class CloudDaemon(object):
     # 云端设置本地端属性，本地处理（异步）
     def on_thing_prop_changed(self, params, userdata):
         if self.__power_name in params.keys():
-            self.__power = self.__process.set_power(params[self.__power_name])
-
+            (status, data) = self.__power = self.__process.set_power(params[self.__power_name])
+            if status is True:
+                self.__power = data
+                self.upload_power()
         else:
             logging.warning("wrong data:%s" % params)
-        self.lk.thing_post_property(self.__properties)  # SDK不会主动上报属性变化，如需要修改后再次上报云端，需要调用thing_post_property()发送
-        print('prop_data:', self.__properties)
+        """
+        self.lk.thing_post_property(self.properties())  # SDK不会主动上报属性变化，如需要修改后再次上报云端，需要调用thing_post_property()发送
+        print('prop_data:', self.properties())
         print('message:', params)
         logging.info("on_thing_prop_changed  data:%s " % params)
+        """
 
     def test(self):
         # 属性上报测试

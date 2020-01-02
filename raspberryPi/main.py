@@ -1,5 +1,9 @@
 import json
 import time
+import threading
+
+from apscheduler.schedulers.background import BackgroundScheduler
+
 import raspberryPi.ArduinoDaemon as arduino
 import raspberryPi.CloudDaemon as cloud
 
@@ -10,10 +14,22 @@ def main():
     aliyun = cloud.CloudDaemon(config_path="config.json", model_path="model.json", process=myProcess)
     aliyun.connect_cloud()
 
-    while 1:
-        time.sleep(5)
+    def temperature_and_humidity():
         aliyun.update_temperature_and_humidity()
         aliyun.upload_temperature_and_humidity()
+
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(temperature_and_humidity, 'interval', seconds=10)
+    try:
+        scheduler.start()
+    except SystemExit:
+        scheduler.shutdown()
+
+    try:
+        while True:
+            time.sleep(2)
+    except SystemExit:
+        scheduler.shutdown()
 
 
 class Process(object):
@@ -32,7 +48,9 @@ class Process(object):
         self.__arduino.put_info(json.dumps(cmd).encode('utf-8'))
         result = json.loads(self.__arduino.get_info())
         if result["cmd"] == "dht" and result["code"] == 200:
-            return result["data"]
+            return True,result["data"]
+        else:
+            return False,{}
 
     def get_temp(self):
         cmd = {"cmd": self.__cmd_dht}

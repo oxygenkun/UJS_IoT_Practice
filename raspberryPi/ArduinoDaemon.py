@@ -17,7 +17,7 @@ class USBInterface(object):
                 print('open serial 1 failed.')
         """
         try:
-            self.ser = serial.Serial('COM4', 9600, timeout=5)
+            self.ser = serial.Serial('COM4', 9600, timeout=3)
             print('A Serial Echo Is Running...')
         except Exception as e:
             print('open serial  failed.')
