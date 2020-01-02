@@ -3,20 +3,23 @@
 #define LEDPIN  2
 #define DHTPIN 4
 #define DHTTYPE DHT11
+#define MTOTRPIN 6
 
 DHT dht(DHTPIN, DHTTYPE);
 bool powerValue;
+int motorSpeed;
+
 String inputString;
 DynamicJsonDocument inputJson(200);
 
 String cmd_ps = "ps";
 String cmd_dht = "dht";
-
+String cmd_mot = "mot";
 
 void setup() {
   // initialize equipment's properties
   powerValue = 0;
-
+  motorSpeed = 0;
   // initialize
   Serial.begin(9600);
   dht.begin();
@@ -28,7 +31,9 @@ void setup() {
 void loop() {
   digitalWrite(LEDPIN, powerValue);
 
-  delay(1000);
+  
+    analogWrite(MTOTRPIN, motorSpeed);
+  delay(30);
 }
 
 /*
@@ -59,6 +64,10 @@ void serialEvent() {
   else if (cmd == cmd_dht) {
     readTempAndHumi();
   }
+  else if (cmd == cmd_mot) {
+    long val = inputJson["par"];
+    motorSet(val);
+  }
   else
     errorReport(F("Wrong Command!"));
 }
@@ -71,8 +80,7 @@ void powerSet(int val) {
     powerValue = val;
 
     DynamicJsonDocument returnJson(50);
-    returnJson["cmd"] = "ps";
-    returnJson["code"] = 200;
+    returnJson["cmd"] = cmd_ps;
     returnJson["data"] = powerValue;
     String returnString ;
     serializeJson(returnJson, returnString);
@@ -105,6 +113,22 @@ void readTempAndHumi() {
   Serial.println(returnString);
 
 }
+
+void motorSet(int val) {
+  if (val >= 0 && val <= 255)
+    motorSpeed = val;
+  else if (val < 0)
+    motorSpeed = 0;
+  else
+    motorSpeed = 255;
+  DynamicJsonDocument returnJson(50);
+  returnJson["cmd"] = cmd_mot;
+  returnJson["data"] = motorSpeed;
+  String returnString ;
+  serializeJson(returnJson, returnString);
+  Serial.println(returnString);
+}
+
 
 /*
     ERROR report
