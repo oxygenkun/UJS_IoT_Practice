@@ -9,11 +9,15 @@ from linkkit import linkkit
 class CloudDaemon(object):
     # 属性
     __properties = {
-        'power': 0,
-        'counter': 0
+        'PowerSwitch': 0,
+        'Counter': 0,
+        'Temp': 0,
+        'Humi': 0
     }
     __power = 0
     __counter = 0
+    __temperature = 0.00
+    __humidity = 0.00
 
     def __init__(self, config_path, model_path):
         LOG_FORMAT = "%(thread)d %(asctime)s  %(levelname)s %(filename)s %(lineno)d %(message)s"
@@ -47,52 +51,79 @@ class CloudDaemon(object):
     def connect_cloud(self):
         self.lk.connect_async()
         self.lk.start_worker_loop()
+        # 延时
+        time.sleep(2)
+        # 第一次数据上报
+        self.lk.thing_post_property(self.__properties)
+
+
 
     def set_power(self, val):
         if val is True or val is False:
-            self.power = val
+            self.__power = val
+
+    def get_temperature(self):
+        return self.__temperature
+
+    def set_temperature(self, val):
+        self.__temperature = val
+
+    def get_humidity(self):
+        return self.__humidity
+
+    def set_humidity(self,val):
+        self.__humidity = val
+
+    def upload_temperature_and_humidity(self):
+        prop_data = {'Temp': self.__temperature,
+                     'Humi': self.__humidity}
+        rc, request_id = self.lk.thing_post_property(prop_data)
+        if rc == 0:
+            logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
+        else:
+            logging.warning("thing_post_property failed:%d" % rc)
 
     ######################################
     # 模版模式，观察者模式
     #####################################
-    # 连接
+    # 当连接
     def on_connect(self, session_flag, rc, userdata):
         logging.info("on_connect:%d,rc:%d,userdata:" % (session_flag, rc))
 
-    # 断开连接
+    # 当断开连接
     def on_disconnect(self, rc, userdata):
         logging.info("on_disconnect:rc:%d,userdata:" % rc)
 
-    # 订阅
+    # 当订阅
     def on_subscribe_topic(self, mid, granted_qos, userdata):
         logging.info("on_subscribe_topic mid:%d, granted_qos:%s" %
                      (mid, str(','.join('%s' % it for it in granted_qos))))
 
-    # 取消订阅
+    # 当取消订阅
     def on_unsubscribe_topic(self, mid, userdata):
         logging.info("on_unsubscribe_topic mid:%d" % mid)
 
-    # Topic消息
+    # 当有Topic消息
     def on_topic_message(self, topic, payload, qos, userdata):
         logging.info("on_topic_message:" + topic + " payload:" + str(payload) + " qos:" + str(qos))
 
-    # 发布消息
+    # 当发布消息
     def on_publish_topic(self, mid, userdata):
         logging.info("on_publish_topic mid:%d" % mid)
 
-    # 上报属性
+    # 当上报属性
     def on_thing_prop_post(self, request_id, code, data, message, userdata):
         logging.info("on_thing_prop_post request id:%s, code:%d message:%s, data:%s,userdata:%s" %
                      (request_id, code, message, data, userdata))
 
-    # 用户可以进行属性上报，事件上报，服务响应，此调用需要在连接前
+    # 当用户可以进行属性上报，事件上报，服务响应，此调用需要在连接前
     def on_thing_enable(self, userdata):
         logging.info("on_thing_enable")
 
     def on_thing_disable(self, userdata):
         print("on_thing_disable")
 
-    # 服务端对上报的事件处理后发出响应
+    # 当服务端对上报的事件处理后发出响应
     def on_thing_event_post(self, event, request_id, code, data, message, userdata):
         logging.info(
             "on_thing_event_post event:%s,request id:%s, code:%d, data:%s, message:%s" %
@@ -104,14 +135,8 @@ class CloudDaemon(object):
             pass
             # lk.thing_answer_service(identifier, request_id, code, params)
 
-    # 云端设置本地端属性
+    # 当云端设置本地端属性
     def on_thing_prop_changed(self, message, userdata):
-
-        # 属性上报测试
-        prop_data = {
-            "PowerSwitch": 0,
-            "Counter": 1
-        }
         if "PowerSwitch" in message.keys():
             self.prop_data["PowerSwitch"] = message["PowerSwitch"]
         elif "WindSpeed" in message.keys():
@@ -144,6 +169,3 @@ class CloudDaemon(object):
             logging.info("thing_trigger_event success:%r,mid:%r,\npost_data:%s" % (rc1, request_id1, events))
         else:
             logging.warning("thing_trigger_event failed:%d" % rc)
-
-        while True:
-            pass
