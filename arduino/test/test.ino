@@ -30,7 +30,10 @@ void setup() {
 
 void loop() {
   digitalWrite(LEDPIN, powerValue);
-  analogWrite(MTOTRPIN, motorSpeed);
+  if (powerValue == 1)
+    analogWrite(MTOTRPIN, motorSpeed);
+  else 
+    analogWrite(MTOTRPIN, 0);
   delay(30);
 }
 
@@ -113,12 +116,12 @@ void readTempAndHumi() {
 }
 
 void motorSet(int val) {
-  if (val >= 0 && val <= 255)
-    motorSpeed = val;
-  else if (val < 0)
-    motorSpeed = 0;
-  else
-    motorSpeed = 255;
+    if (val >= 0 && val <= 255)
+      motorSpeed = val;
+    else if (val < 0)
+      motorSpeed = 0;
+    else
+      motorSpeed = 255;
   DynamicJsonDocument returnJson(50);
   returnJson["cmd"] = cmd_mot;
   returnJson["data"] = motorSpeed;

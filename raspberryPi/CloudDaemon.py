@@ -60,6 +60,9 @@ class CloudDaemon(object):
         self.lk.on_thing_prop_changed = self.on_thing_prop_changed
         self.lk.on_thing_prop_post = self.on_thing_prop_post
 
+        self.set_power(val=0)
+        self.set_fan(val=0)
+
     # 连接
     def connect_cloud(self):
         self.lk.connect_async()
@@ -67,23 +70,25 @@ class CloudDaemon(object):
         # 延时
         time.sleep(2)
         # 第一次数据上报
+
         self.lk.thing_post_property(self.properties())
 
     def set_power(self, val):
-        if val is True or val is False:
-            self.__power = val
+        if val is 0 or val is 1:
+            (status, data) = self.__power = self.__process.set_power(val)
+            if status is True:
+                self.__power = data
+
+    def set_fan(self, val):
+        (status, data) = self.__power = self.__process.set_fan(val)
+        if status is True:
+            self.__fan = data
 
     def get_temperature(self):
         return self.__temperature
 
-    def set_temperature(self, val):
-        self.__temperature = val
-
     def get_humidity(self):
         return self.__humidity
-
-    def set_humidity(self, val):
-        self.__humidity = val
 
     def upload_power(self):
         prop_data = {self.__power_name: self.__power}
@@ -117,7 +122,6 @@ class CloudDaemon(object):
             logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
         else:
             logging.warning("thing_post_property failed:%d" % rc)
-
 
     ######################################
     # 模版模式，观察者模式
@@ -173,18 +177,20 @@ class CloudDaemon(object):
 
     # 云端设置本地端属性，本地处理（异步）
     def on_thing_prop_changed(self, params, userdata):
+        is_processed = False
         if self.__power_name in params.keys():
-            (status, data) = self.__power = self.__process.set_power(params[self.__power_name])
-            if status is True:
-                self.__power = data
-                self.upload_power()
+            self.set_power(val=params[self.__power_name])
+            self.upload_power()
+            is_processed = True
+
         if self.__fan_name in params.keys():
-            (status, data) = self.__power = self.__process.set_fan(params[self.__fan_name])
-            if status is True:
-                self.__fan = data
-                self.upload_fan()
-        else:
+            self.set_fan(val=params[self.__fan_name])
+            self.upload_fan()
+            is_processed = True
+
+        if is_processed is False:
             logging.warning("wrong data:%s" % params)
+
         """
         self.lk.thing_post_property(self.properties())  # SDK不会主动上报属性变化，如需要修改后再次上报云端，需要调用thing_post_property()发送
         print('prop_data:', self.properties())
@@ -192,22 +198,23 @@ class CloudDaemon(object):
         logging.info("on_thing_prop_changed  data:%s " % params)
         """
 
-    def test(self):
-        # 属性上报测试
-        prop_data = {
-            "PowerSwitch": self.__power,
-            "Counter": self.__counter
-        }
-        rc, request_id = self.lk.thing_post_property(prop_data)
-        if rc == 0:
-            logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
-        else:
-            logging.warning("thing_post_property failed:%d" % rc)
 
-        # 事件上报测试
-        events = ("HardwareError", {"ErrorCode": random.randint(0, 3)})
-        rc1, request_id1 = self.lk.thing_trigger_event(events)
-        if rc1 == 0:
-            logging.info("thing_trigger_event success:%r,mid:%r,\npost_data:%s" % (rc1, request_id1, events))
-        else:
-            logging.warning("thing_trigger_event failed:%d" % rc)
+def test(self):
+    # 属性上报测试
+    prop_data = {
+        "PowerSwitch": self.__power,
+        "Counter": self.__counter
+    }
+    rc, request_id = self.lk.thing_post_property(prop_data)
+    if rc == 0:
+        logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
+    else:
+        logging.warning("thing_post_property failed:%d" % rc)
+
+    # 事件上报测试
+    events = ("HardwareError", {"ErrorCode": random.randint(0, 3)})
+    rc1, request_id1 = self.lk.thing_trigger_event(events)
+    if rc1 == 0:
+        logging.info("thing_trigger_event success:%r,mid:%r,\npost_data:%s" % (rc1, request_id1, events))
+    else:
+        logging.warning("thing_trigger_event failed:%d" % rc)

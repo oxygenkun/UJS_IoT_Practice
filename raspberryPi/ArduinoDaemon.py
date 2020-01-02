@@ -1,3 +1,5 @@
+import time
+
 import serial
 
 
@@ -19,6 +21,7 @@ class USBInterface(object):
         try:
             self.ser = serial.Serial('COM4', 9600, timeout=3)
             print('A Serial Echo Is Running...')
+            time.sleep(3)
         except Exception as e:
             print('open serial  failed.')
 

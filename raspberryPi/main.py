@@ -40,7 +40,7 @@ class Process(object):
             self.__arduino = usb
 
     def set_power(self, val):
-        return self.set_cmd(cmd=self.__cmd_power_set, val=val)
+        return self.set_cmd(cmd_name=self.__cmd_power_set, val=val)
 
     def get_temp(self):
         cmd = {"cmd": self.__cmd_dht}
@@ -54,13 +54,13 @@ class Process(object):
             return False, {}
 
     def set_fan(self, val):
-        return self.set_cmd(cmd=self.__cmd_fan_set, val=val)
+        return self.set_cmd(cmd_name=self.__cmd_fan_set, val=val)
 
-    def set_cmd(self, cmd, val):
-        cmd = {"cmd": cmd, "par": val}
+    def set_cmd(self, cmd_name, val):
+        cmd = {"cmd": cmd_name, "par": val}
         self.__arduino.put_info(json.dumps(cmd).encode('utf-8'))
         result = json.loads(self.__arduino.get_info())
-        if result["cmd"] == cmd:
+        if result["cmd"] == cmd_name:
             return True, result["data"]
         else:
             return False, {}
