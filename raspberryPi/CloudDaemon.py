@@ -10,11 +10,13 @@ class CloudDaemon(object):
     __power_name = 'PowerSwitch'
     __temperature_name = 'Temp'
     __humidity_name = 'Humi'
+    __fan_name = 'Fan'
 
     __power = 0
     __counter = 0
     __temperature = 0.00
     __humidity = 0.00
+    __fan = 0
 
     # 属性
     def properties(self):
@@ -22,7 +24,8 @@ class CloudDaemon(object):
             self.__power_name: self.__power,
             'Counter': 0,
             self.__temperature_name: self.__temperature,
-            self.__humidity_name: self.__humidity
+            self.__humidity_name: self.__humidity,
+            self.__fan_name: self.__fan
         }
 
     def __init__(self, config_path, model_path, process):
@@ -83,7 +86,7 @@ class CloudDaemon(object):
         self.__humidity = val
 
     def upload_power(self):
-        prop_data = {self.__power_name:self.__power}
+        prop_data = {self.__power_name: self.__power}
         rc, request_id = self.lk.thing_post_property(prop_data)
         if rc == 0:
             logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
@@ -106,6 +109,15 @@ class CloudDaemon(object):
             logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
         else:
             logging.warning("thing_post_property failed:%d" % rc)
+
+    def upload_fan(self):
+        prop_data = {self.__fan_name: self.__fan}
+        rc, request_id = self.lk.thing_post_property(prop_data)
+        if rc == 0:
+            logging.info("thing_post_property success:%r,mid:%r,\npost_data:%s" % (rc, request_id, prop_data))
+        else:
+            logging.warning("thing_post_property failed:%d" % rc)
+
 
     ######################################
     # 模版模式，观察者模式
@@ -166,6 +178,11 @@ class CloudDaemon(object):
             if status is True:
                 self.__power = data
                 self.upload_power()
+        if self.__fan_name in params.keys():
+            (status, data) = self.__power = self.__process.set_fan(params[self.__fan_name])
+            if status is True:
+                self.__fan = data
+                self.upload_fan()
         else:
             logging.warning("wrong data:%s" % params)
         """
