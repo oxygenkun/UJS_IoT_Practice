@@ -30,9 +30,7 @@ void setup() {
 
 void loop() {
   digitalWrite(LEDPIN, powerValue);
-
-  
-    analogWrite(MTOTRPIN, motorSpeed);
+  analogWrite(MTOTRPIN, motorSpeed);
   delay(30);
 }
 

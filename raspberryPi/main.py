@@ -1,7 +1,5 @@
 import json
 import time
-import threading
-
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import raspberryPi.ArduinoDaemon as arduino
@@ -19,7 +17,7 @@ def main():
         aliyun.upload_temperature_and_humidity()
 
     scheduler = BackgroundScheduler()
-    scheduler.add_job(temperature_and_humidity, 'interval', seconds=10)
+    scheduler.add_job(temperature_and_humidity, 'interval', seconds=30)
     try:
         scheduler.start()
     except SystemExit:
@@ -35,22 +33,14 @@ def main():
 class Process(object):
     __cmd_power_set = "ps"
     __cmd_dht = "dht"
+    __cmd_fan_set = 'mot'
 
     def __init__(self, usb):
         if isinstance(usb, arduino.USBInterface):
             self.__arduino = usb
 
     def set_power(self, val):
-        cmd = {
-            "cmd": self.__cmd_power_set,
-            "par": val
-        }
-        self.__arduino.put_info(json.dumps(cmd).encode('utf-8'))
-        result = json.loads(self.__arduino.get_info())
-        if result["cmd"] == "dht" and result["code"] == 200:
-            return True,result["data"]
-        else:
-            return False,{}
+        return self.set_cmd(cmd=self.__cmd_power_set, val=val)
 
     def get_temp(self):
         cmd = {"cmd": self.__cmd_dht}
@@ -61,6 +51,18 @@ class Process(object):
                 data = result["data"]
                 return True, data
         except Exception as e:
+            return False, {}
+
+    def set_fan(self, val):
+        return self.set_cmd(cmd=self.__cmd_fan_set, val=val)
+
+    def set_cmd(self, cmd, val):
+        cmd = {"cmd": cmd, "par": val}
+        self.__arduino.put_info(json.dumps(cmd).encode('utf-8'))
+        result = json.loads(self.__arduino.get_info())
+        if result["cmd"] == cmd:
+            return True, result["data"]
+        else:
             return False, {}
 
 
