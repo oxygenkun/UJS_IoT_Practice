@@ -27,8 +27,8 @@ class USBInterface(object):
         usb_str = ''
         s = self.ser.readline()
 
-        """
-        # if send byte by byte, using '$' to end
+        """ if send byte by byte, using '$' to end
+        
         if s == b'$':
             break
         else:
@@ -47,5 +47,3 @@ class USBInterface(object):
             print('usb put:' + info.decode('utf-8'))
         except Exception as e:
             print('failed to put.')
-
-

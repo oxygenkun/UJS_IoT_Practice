@@ -9,6 +9,9 @@ bool powerValue;
 String inputString;
 DynamicJsonDocument inputJson(200);
 
+String cmd_ps = "ps";
+String cmd_dht = "dht";
+
 
 void setup() {
   // initialize equipment's properties
@@ -17,14 +20,14 @@ void setup() {
   // initialize
   Serial.begin(9600);
   dht.begin();
-  
+
   // reserve 200 bytes for the inputString:
   inputString.reserve(200);
 }
 
 void loop() {
   digitalWrite(LEDPIN, powerValue);
-  
+
   delay(1000);
 }
 
@@ -49,11 +52,11 @@ void serialEvent() {
 
   if (cmd == NULL)
     errorReport(F("No Command!"));
-  else if (cmd == "ps") {
+  else if (cmd == cmd_ps) {
     long val = inputJson["par"];
     powerSet(val);
   }
-  else if (cmd == "dht") {
+  else if (cmd == cmd_dht) {
     readTempAndHumi();
   }
   else
@@ -66,9 +69,12 @@ void serialEvent() {
 void powerSet(int val) {
   if (val == 0 || val == 1) {
     powerValue = val;
-    String stringOne = F("Power set: ");
-    String stringTwo = stringOne + powerValue;
-    Serial.println(stringTwo);
+   
+    DynamicJsonDocument returnJson(50);
+    returnJson["cmd"] = "ps";
+    returnJson["code"] = 200;
+    returnJson["data"] = powerValue;
+    serializeJson(returnJson, Serial);
   } else
     errorReport("Wrong Power Set Parameters!");
 }
@@ -89,17 +95,18 @@ void readTempAndHumi() {
   DynamicJsonDocument returnJson(50);
   DynamicJsonDocument dataJson(25);
   returnJson["cmd"] = "dht";
-  dataJson["humi"] = h;
-  dataJson["temp"] = t;
+  dataJson["Humi"] = h;
+  dataJson["Temp"] = t;
   returnJson["data"] = dataJson;
   serializeJson(returnJson, Serial);
+
 }
 
 /*
     ERROR report
 */
 void errorReport(String err) {
-  String stringOne = "ERROR:";
+  String stringOne = F("ERROR:");
   String stringTwo = stringOne + err;
   Serial.println(stringTwo);
 }
