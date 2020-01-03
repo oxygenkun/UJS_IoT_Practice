@@ -2,8 +2,8 @@ import json
 import time
 from apscheduler.schedulers.background import BackgroundScheduler
 
-import raspberryPi.ArduinoDaemon as arduino
-import raspberryPi.CloudDaemon as cloud
+import ArduinoDaemon as arduino
+import CloudDaemon as cloud
 
 
 def main():
