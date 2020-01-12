@@ -9,6 +9,7 @@ class USBInterface(object):
         
         try:
             self.ser = serial.Serial('/dev/ttyACM0', 9600,timeout=3)
+            time.sleep(3)
             print('A Serial Echo Is Running...')
         except Exception as e:
             print('open serial 0 failed.')
