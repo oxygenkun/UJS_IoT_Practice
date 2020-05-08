@@ -6,7 +6,7 @@
 
 ##  树莓派 python 环境配置
 
-1. 创建和激活 VirtualEnvironments
+1. 创建和激活 VirtualEnvironments（可跳过）
 
 2. 使用pip自动安装linkkit
 
